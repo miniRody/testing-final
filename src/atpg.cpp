@@ -49,6 +49,7 @@ void ATPG::test() {
     vector<string> test_patterns;
     for (fptr fault : flist_undetect) {
         // display_fault(fault);
+        total_attempt_num = detected_num - fault->detected_time;
         switch (podem(fault, current_backtracks, test_patterns)) {
             case TRUE:
                 for (string vec : test_patterns) {
@@ -62,7 +63,7 @@ void ATPG::test() {
                 printf("#Canot find solution within time limit\n");
                 break;
         }
-        cout << --num_undetected << " faults remaining\n";
+        // cout << --num_undetected << " faults remaining\n";
     }
 
     display_undetect();
