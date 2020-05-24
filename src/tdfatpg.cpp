@@ -22,12 +22,10 @@ bool ATPG::achieve_objective(const wptr object_wire, const int object_level) {
         case CONFLICT:
             return false;
     }
-    if (object_wire->value == object_level)
-        return true;
-    else if (object_wire->value == object_level ^ 1)
-        return false;
-    get_wire_support(object_wire, PI_wires);
-    assert(object_wire->value == U);
+    if (object_wire->value == U)
+        get_wire_support(object_wire, PI_wires);
+    else
+        return object_wire->value == object_level;
     do {
         sim();
         /* Go to next state */
