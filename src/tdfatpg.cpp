@@ -5,6 +5,7 @@
 #include <set>
 
 #define CONFLICT 2
+#define BACKTRACK_LIMIT 100 
 
 /* Assign values to PI such that object_wire has value of object_level */
 bool ATPG::achieve_objective(const wptr object_wire, const int object_level) {
@@ -49,7 +50,7 @@ bool ATPG::achieve_objective(const wptr object_wire, const int object_level) {
         }
         else
             return true;
-    } while (!decision_state.empty());
+    } while (!decision_state.empty() && backtracks < BACKTRACK_LIMIT);
     return false;
 }
 

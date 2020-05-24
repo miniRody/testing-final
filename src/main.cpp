@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 /* parse the input switches & arguments */
   while (i < argc) {
     // number of test generation attempts for each fault.  used in podem.cpp
-    if (strcmp(argv[i], "-anum") == 0) {
+    if (strcmp(argv[i], "-anum") == 0 || strcmp(argv[i], "-ndet") == 0) {
       atpg.set_total_attempt_num(atoi(argv[i + 1]));
       i += 2;
     } else if (strcmp(argv[i], "-bt") == 0) {
@@ -38,11 +38,7 @@ int main(int argc, char *argv[]) {
     }  else if (strcmp(argv[i], "-tdfatpg") == 0) {
       i += 1;
     }
-      // for N-detect fault simulation
-    else if (strcmp(argv[i], "-ndet") == 0) {
-      atpg.detected_num = atoi(argv[i + 1]);
-      i += 2;
-    } else if (argv[i][0] == '-') {
+     else if (argv[i][0] == '-') {
       j = 1;
       while (argv[i][j] != '\0') {
         if (argv[i][j] == 'd') {

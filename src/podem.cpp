@@ -38,8 +38,15 @@ int ATPG::podem(const fptr fault, int &current_backtracks, vector<string> &test_
       sim();  // Fig 7.3
       wfault = fault_evaluate(fault);
       if (wfault != nullptr) forward_imply(wfault);// propagate fault effect
-      if (check_test()) find_test = true; // if fault effect reaches PO, done. Fig 7.10
-      break;
+      if ((test_pair = find_V1_pattern(fault)) != "") {
+          if (check_test()) { // if fault effect reaches PO, done. Fig 7.10
+              test_patterns.push_back(test_pair);
+              find_test = true; 
+              attempt_num++; // increase pattern count for this fault
+          }
+          break;
+      }
+      // If no hope to activate the fault, fall through
     case CONFLICT:
       no_test = true; // cannot achieve initial objective, no test
       break;
