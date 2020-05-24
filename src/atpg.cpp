@@ -60,7 +60,7 @@ void ATPG::test() {
                 printf("#Undetectable fault!\n");
                 break;
             case MAYBE:
-                printf("#Canot find solution within time limit\n");
+                printf("#Cannot find solution within time limit\n");
                 break;
         }
         // cout << --num_undetected << " faults remaining\n";

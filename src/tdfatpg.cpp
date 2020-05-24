@@ -1,11 +1,12 @@
 #include "atpg.h"
 #include <assert.h>
+#include <limits.h>
 #include <queue>
 #include <stack>
 #include <set>
 
 #define CONFLICT 2
-#define BACKTRACK_LIMIT 100 
+#define BACKTRACK_LIMIT INT_MAX
 
 /* Assign values to PI such that object_wire has value of object_level */
 bool ATPG::achieve_objective(const wptr object_wire, const int object_level) {
