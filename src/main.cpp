@@ -35,6 +35,8 @@ int main(int argc, char *argv[]) {
       vetFile = string(argv[i + 1]);
       atpg.set_tdfsim_only(true);
       i += 2;
+    }  else if (strcmp(argv[i], "-tdfatpg") == 0) {
+      i += 1;
     }
       // for N-detect fault simulation
     else if (strcmp(argv[i], "-ndet") == 0) {

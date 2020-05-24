@@ -313,7 +313,7 @@ char ATPG::itoc(const int &i) {
     case 1:
       return '1';
     case 2:
-      return 'U';
+      return '2';
     case 0:
       return '0';
   }

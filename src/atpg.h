@@ -195,7 +195,7 @@ class ATPG {
   bool find_test{};        // true when a test pattern is found
   bool no_test{};          // true when it is proven that no test exists for this fault
 
-  int podem(fptr, int &);
+  int podem(fptr, int &, vector<string>&);
   wptr fault_evaluate(fptr);
   void forward_imply(wptr);
   wptr test_possible(fptr);
@@ -215,6 +215,12 @@ class ATPG {
   void display_io();
   void display_undetect();
   void display_fault(fptr);
+
+  /* declared in tdfatpg.cpp */
+  bool achieve_objective(const wptr, const int);
+  string find_V1_pattern(const fptr);
+  void ckt_snapshot(int);
+  void get_wire_support(wptr, vector<wptr>&);
 
   /* declaration of WIRE, NODE, and FAULT classes */
   /* in our model, a wire has inputs (inode) and outputs (onode) */

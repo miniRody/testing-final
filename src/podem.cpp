@@ -10,12 +10,13 @@
 #define CONFLICT 2
 
 /* generates a single pattern for a single fault */
-int ATPG::podem(const fptr fault, int &current_backtracks) {
+int ATPG::podem(const fptr fault, int &current_backtracks, vector<string> &test_patterns) {
   int i, ncktwire, ncktin;
   wptr wpi; // points to the PI currently being assigned
   forward_list<wptr> decision_tree; // design_tree (a LIFO stack)
   wptr wfault;
   int attempt_num = 0;  // counts the number of pattern generated so far for the given fault
+  string test_pair;
 
   /* initialize all circuit wires to unknown */
   ncktwire = sort_wlist.size();
@@ -26,6 +27,7 @@ int ATPG::podem(const fptr fault, int &current_backtracks) {
   no_of_backtracks = 0;
   find_test = false;
   no_test = false;
+  test_patterns.clear();
 
   mark_propagate_tree(fault->node);
 
@@ -87,15 +89,9 @@ int ATPG::podem(const fptr fault, int &current_backtracks) {
     if (wpi) {
       sim();
       if (wfault = fault_evaluate(fault)) forward_imply(wfault);
-      if (check_test()) {
+      if (check_test() && (test_pair = find_V1_pattern(fault)) != "") {
+        test_patterns.push_back(test_pair);
         find_test = true;
-        /* if multiple patterns per fault, print out every test cube */
-        if (total_attempt_num > 1) {
-          if (attempt_num == 0) {
-            display_fault(fault);
-          }
-          display_io();
-        }
         attempt_num++; // increase pattern count for this fault
 
         /* keep trying more PI assignments if we want multiple patterns per fault
@@ -136,27 +132,6 @@ int ATPG::podem(const fptr fault, int &current_backtracks) {
   unmark_propagate_tree(fault->node);
 
   if (find_test) {
-    /* normally, we want one pattern per fault */
-    if (total_attempt_num == 1) {
-
-      for (i = 0; i < ncktin; i++) {
-        switch (cktin[i]->value) {
-          case 0:
-          case 1:
-            break;
-          case D:
-            cktin[i]->value = 1;
-            break;
-          case D_bar:
-            cktin[i]->value = 0;
-            break;
-          case U:
-            cktin[i]->value = rand() & 01;
-            break; // random fill U
-        }
-      }
-      display_io();
-    } else fprintf(stdout, "\n");  // do not random fill when multiple patterns per fault
     return (TRUE);
   } else if (no_test) {
     /*fprintf(stdout,"redundant fault...\n");*/
