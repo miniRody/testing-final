@@ -273,6 +273,13 @@ void ATPG::tdfault_sim_a_vector2(const string &vec, int &num_of_current_detect) 
     } // end fault sim of a packet
   } // end loop. for f = flist
 
+  for (fptr fault : flist_undetect) {
+      if (fault->detect == TRUE) {
+          if (++fault->detected_time < detected_num)
+              fault->detect = FALSE;
+      }
+  }
+
   /* fault dropping  */
   flist_undetect.remove_if(
       [&](const fptr fptr_ele) {

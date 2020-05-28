@@ -43,16 +43,25 @@ void ATPG::test() {
     }// if fsim only
 
 
-    int num_undetected = 0;
-    for (fptr fault : flist_undetect)
-        num_undetected++;
     vector<string> test_patterns;
-    for (fptr fault : flist_undetect) {
+    vector<fptr> fault_list(flist_undetect.begin(), flist_undetect.end());
+    int num_undetected = fault_list.size();
+    int detected_fnum;
+    for (fptr fault : fault_list) {
+        if (fault->detect == TRUE)
+            continue;
         // display_fault(fault);
         total_attempt_num = detected_num - fault->detected_time;
         switch (podem(fault, current_backtracks, test_patterns)) {
             case TRUE:
-                for (string vec : test_patterns) {
+                for (string &vec : test_patterns) {
+                    if (!compress_test) { // random fill unknown values
+                        for (char &bit : vec) {
+                            if (bit == '2')
+                                bit = itoc(rand() & 1);
+                        }
+                    }
+                    tdfault_sim_a_vector(vec, detected_fnum);
                     printf("T'%s'\n", vec.c_str());
                 }
                 break;
@@ -85,6 +94,7 @@ ATPG::ATPG() {
     this->total_attempt_num = 1;    /* default value */
     this->fsim_only = false;        /* flag to indicate fault simulation only */
     this->tdfsim_only = false;      /* flag to indicate tdfault simulation only */
+    this->compress_test = false;    /* flag to indicate whether to compress test */
 
     /* orginally assigned in input.c */
     this->debug = 0;                /* != 0 if debugging;  this is a switch of debug mode */

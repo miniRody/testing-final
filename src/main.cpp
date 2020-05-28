@@ -37,6 +37,9 @@ int main(int argc, char *argv[]) {
       i += 2;
     }  else if (strcmp(argv[i], "-tdfatpg") == 0) {
       i += 1;
+    } else if (strcmp(argv[i], "-compression") == 0) {
+      atpg.set_compress_test();
+      i += 1;
     }
        // for N-detect fault simulation
     else if (strcmp(argv[i], "-ndet") == 0) {
@@ -115,4 +118,8 @@ void ATPG::set_total_attempt_num(const int &i) {
 
 void ATPG::set_backtrack_limit(const int &i) {
   this->backtrack_limit = i;
+}
+
+void ATPG::set_compress_test() {
+  this->compress_test = true;
 }
