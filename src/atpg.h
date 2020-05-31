@@ -197,7 +197,7 @@ class ATPG {
   bool find_test{};        // true when a test pattern is found
   bool no_test{};          // true when it is proven that no test exists for this fault
 
-  int podem(fptr, int &, vector<string>&);
+  int podem(fptr, vector<string>&);
   wptr fault_evaluate(fptr);
   void forward_imply(wptr);
   wptr test_possible(fptr);
@@ -223,6 +223,7 @@ class ATPG {
   string find_V1_pattern(const fptr);
   void ckt_snapshot(int);
   void get_wire_support(wptr, vector<wptr>&);
+  void dynamic_compression(string&);
 
   /* declaration of WIRE, NODE, and FAULT classes */
   /* in our model, a wire has inputs (inode) and outputs (onode) */

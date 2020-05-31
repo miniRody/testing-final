@@ -11,8 +11,6 @@ void ATPG::test() {
     string vec;
     int current_detect_num = 0;
     int total_detect_num = 0;
-    int total_no_of_backtracks = 0;  // accumulative number of backtracks
-    int current_backtracks = 0;
     int no_of_aborted_faults = 0;
     int no_of_redundant_faults = 0;
     int no_of_calls = 0;
@@ -46,24 +44,27 @@ void ATPG::test() {
     vector<string> test_patterns;
     vector<fptr> fault_list(flist_undetect.begin(), flist_undetect.end());
     int num_undetected = fault_list.size();
-    int detected_fnum;
+    int detected_fnum, gen_patterns = 0;
+
     for (fptr fault : fault_list) {
         if (fault->detect == TRUE)
             continue;
         // display_fault(fault);
         total_attempt_num = detected_num - fault->detected_time;
-        switch (podem(fault, current_backtracks, test_patterns)) {
+        switch (podem(fault, test_patterns)) {
             case TRUE:
                 for (string &vec : test_patterns) {
-                    if (!compress_test) { // random fill unknown values
-                        for (char &bit : vec) {
+                    if (compress_test)
+                        dynamic_compression(vec);
+                    else { // random fill unknown values
+                        for (char &bit : vec)
                             if (bit == '2')
                                 bit = itoc(rand() & 1);
-                        }
                     }
                     tdfault_sim_a_vector(vec, detected_fnum);
                     printf("T'%s'\n", vec.c_str());
                 }
+                gen_patterns += test_patterns.size();
                 break;
             case FALSE:
                 printf("#Undetectable fault!\n");
@@ -72,18 +73,15 @@ void ATPG::test() {
                 printf("#Cannot find solution within time limit\n");
                 break;
         }
-        // cout << --num_undetected << " faults remaining\n";
+        cout << --num_undetected << " faults remaining\n";
     }
 
     display_undetect();
     fprintf(stdout, "\n");
+    fprintf(stdout, "#number of generated test patterns = %d\n", gen_patterns);
     fprintf(stdout, "#number of aborted faults = %d\n", no_of_aborted_faults);
-    fprintf(stdout, "\n");
     fprintf(stdout, "#number of redundant faults = %d\n", no_of_redundant_faults);
-    fprintf(stdout, "\n");
     fprintf(stdout, "#number of calling podem1 = %d\n", no_of_calls);
-    fprintf(stdout, "\n");
-    fprintf(stdout, "#total number of backtracks = %d\n", total_no_of_backtracks);
 }/* end of test */
 
 

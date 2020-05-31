@@ -150,3 +150,8 @@ void ATPG::get_wire_support(wptr ckt_wire, vector<wptr> &supp_wires) {
     }
     supp_wires.assign(PI_wire_set.begin(), PI_wire_set.end());
 }
+
+/* Dynamically compress the given test pattern. */
+void ATPG::dynamic_compression(string &raw_pattern) {
+    ;
+}

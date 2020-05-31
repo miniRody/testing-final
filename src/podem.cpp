@@ -10,7 +10,7 @@
 #define CONFLICT 2
 
 /* generates a single pattern for a single fault */
-int ATPG::podem(const fptr fault, int &current_backtracks, vector<string> &test_patterns) {
+int ATPG::podem(const fptr fault, vector<string> &test_patterns) {
   int i, ncktwire, ncktin;
   wptr wpi; // points to the PI currently being assigned
   forward_list<wptr> decision_tree; // design_tree (a LIFO stack)
@@ -135,7 +135,6 @@ int ATPG::podem(const fptr fault, int &current_backtracks, vector<string> &test_
   }
   decision_tree.clear();
 
-  current_backtracks = no_of_backtracks;
   unmark_propagate_tree(fault->node);
 
   if (find_test) {
