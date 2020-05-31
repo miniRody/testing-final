@@ -7,6 +7,8 @@
 
 #include "atpg.h"
 
+#define DEBUG 0
+
 void ATPG::test() {
     string vec;
     int current_detect_num = 0;
@@ -14,8 +16,6 @@ void ATPG::test() {
     int no_of_aborted_faults = 0;
     int no_of_redundant_faults = 0;
     int no_of_calls = 0;
-
-    fptr fault_under_test = flist_undetect.front();
 
     /* stuck-at fault sim mode */
     if (fsim_only) {
@@ -67,13 +67,16 @@ void ATPG::test() {
                 gen_patterns += test_patterns.size();
                 break;
             case FALSE:
-                printf("#Undetectable fault!\n");
+                if (DEBUG)
+                    printf("#Undetectable fault!\n");
                 break;
             case MAYBE:
-                printf("#Cannot find solution within time limit\n");
+                if (DEBUG)
+                    printf("#Cannot find solution within time limit\n");
                 break;
         }
-        cout << --num_undetected << " faults remaining\n";
+        if (DEBUG)
+            cout << --num_undetected << " faults remaining\n";
     }
 
     display_undetect();

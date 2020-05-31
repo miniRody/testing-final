@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <queue>
 #include <stack>
-#include <set>
+#include <unordered_set>
 
 #define CONFLICT 2
 #define BACKTRACK_LIMIT 100
@@ -130,25 +130,27 @@ void ATPG::ckt_snapshot(int mode) {
 
 /* Collect PIs which have a path with all unknown values to given wire */
 void ATPG::get_wire_support(wptr ckt_wire, vector<wptr> &supp_wires) {
-    set<wptr> PI_wire_set;
+    unordered_set<wptr> visited_wire;
     queue<wptr> visit_queue;
-    wptr internal_wire;
 
+    supp_wires.clear();
     if (ckt_wire->value == U)
         visit_queue.push(ckt_wire);
     while (!visit_queue.empty()) {
-        internal_wire = visit_queue.front();
-        if (internal_wire->is_input())
-            PI_wire_set.insert(internal_wire);
+        wptr ckt_wire = visit_queue.front();
+
+        if (ckt_wire->is_input())
+            supp_wires.push_back(ckt_wire);
         else {
-            for (wptr w : internal_wire->inode.front()->iwire) {
-                if (w->value == U)
+            for (wptr w : ckt_wire->inode.front()->iwire) {
+                if (w->value == U && visited_wire.find(w) == visited_wire.end()) {
                     visit_queue.push(w);    
+                    visited_wire.insert(w);
+                }
             }
         }
         visit_queue.pop();
     }
-    supp_wires.assign(PI_wire_set.begin(), PI_wire_set.end());
 }
 
 /* Dynamically compress the given test pattern. */
