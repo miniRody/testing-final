@@ -45,28 +45,29 @@ void ATPG::test() {
     vector<fptr> fault_list(flist_undetect.begin(), flist_undetect.end());
     int num_undetected = fault_list.size();
     int detected_fnum, gen_patterns = 0;
+    string all_unknown;
 
+    all_unknown.insert(all_unknown.end(), cktin.size() + 1, '2');
     for (fptr fault : fault_list) {
         if (fault->detect == TRUE)
             continue;
         // display_fault(fault);
         total_attempt_num = detected_num - fault->detected_time;
-        switch (podem(fault, test_patterns)) {
+        switch (podem(fault, all_unknown, test_patterns)) {
             case TRUE:
                 for (string &vec : test_patterns) {
                     if (compress_test)
                         dynamic_compression(vec);
-                    else { // random fill unknown values
-                        for (char &bit : vec)
-                            if (bit == '2')
-                                bit = itoc(rand() & 1);
-                    }
+                    for (char &bit : vec)
+                        if (bit == '2')
+                            bit = itoc(rand() & 1);
                     tdfault_sim_a_vector(vec, detected_fnum);
                     printf("T'%s'\n", vec.c_str());
                 }
                 gen_patterns += test_patterns.size();
                 break;
             case FALSE:
+                fault->detect = REDUNDANT;
                 if (DEBUG)
                     printf("#Undetectable fault!\n");
                 break;

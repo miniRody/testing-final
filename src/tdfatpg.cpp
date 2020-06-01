@@ -3,10 +3,13 @@
 #include <limits.h>
 #include <queue>
 #include <stack>
+#include <list>
+#include <map>
 #include <unordered_set>
 
 #define CONFLICT 2
 #define BACKTRACK_LIMIT 100
+#define COMPRESS_NUM 20
 
 /* Assign values to PI such that object_wire has value of object_level */
 bool ATPG::achieve_objective(const wptr object_wire, const int object_level) {
@@ -57,7 +60,7 @@ bool ATPG::achieve_objective(const wptr object_wire, const int object_level) {
 
  /* Assign value to PI such that the transition fault is activated.
   * Return the test pattern in string format. */
-string ATPG::find_V1_pattern(fptr td_fault) {
+string ATPG::find_V1_pattern(fptr td_fault, char last_bit) {
     wptr faulty_wire = sort_wlist[td_fault->to_swlist];
     int shifted_in_bit;
     string ret_val;
@@ -78,7 +81,7 @@ string ATPG::find_V1_pattern(fptr td_fault) {
         if (i != cktin.size() - 1)
             cktin[i]->value = cktin[i+1]->value;
         else
-            cktin[i]->value = U;
+            cktin[i]->value = ctoi(last_bit);
         cktin[i]->set_changed();
     }
     for (int i = 0; i < sort_wlist.size(); ++i) {
@@ -155,5 +158,29 @@ void ATPG::get_wire_support(wptr ckt_wire, vector<wptr> &supp_wires) {
 
 /* Dynamically compress the given test pattern. */
 void ATPG::dynamic_compression(string &raw_pattern) {
-    ;
+    map< int, list<fptr> > buckets;
+    list<fptr> try_flist;
+    vector<string> compressed_pattern;
+    int no_of_compress = 0;
+
+    // Try the difficult faults first
+    for (fptr f : flist_undetect) {
+        if (f->detect == FALSE) {
+            if (buckets.find(f->detected_time) == buckets.end())
+                buckets[f->detected_time] = { f };
+            else
+                buckets[f->detected_time].push_back(f);
+        }
+    }
+    for (auto bucket : buckets)
+        try_flist.splice(try_flist.end(), bucket.second);
+
+    total_attempt_num = 1;
+    for (fptr fault : try_flist) {
+        if (podem(fault, raw_pattern, compressed_pattern) == TRUE) {
+            raw_pattern = compressed_pattern.front();
+            if(++no_of_compress == COMPRESS_NUM) 
+                break;
+        }
+    }
 }
