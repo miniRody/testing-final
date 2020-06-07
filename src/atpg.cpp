@@ -46,7 +46,7 @@ void ATPG::test() {
     vector<string> test_patterns;
     vector<fptr> fault_list(flist_undetect.begin(), flist_undetect.end());
     int num_undetected = fault_list.size();
-    int detected_fnum, gen_patterns = 0;
+    int detected_fnum, pattern_num = 0;
     bool verbose = false;
 
     for (fptr fault : fault_list) {
@@ -56,16 +56,20 @@ void ATPG::test() {
         switch (podem(fault, current_backtracks, test_patterns)) {
             case TRUE:
                 for (string &vec : test_patterns) {
-                    if (!compress_test) { // random fill unknown values
+                    //if (!compress_test) { // random fill unknown values
                         for (char &bit : vec) {
                             if (bit == '2')
                                 bit = itoc(rand() & 1);
                         }
-                    }
+                    //}
+                    if (patterns_set.count(vec)) continue; 
                     tdfault_sim_a_vector(vec, detected_fnum);
-                    printf("T'%s'\n", vec.c_str());
+                    if (!compress_test)
+                        printf("T'%s'\n", vec.c_str());
+                    patterns_set.insert(vec);
+                    patterns.push_back(vec);
+                    pattern_num++;
                 }
-                gen_patterns += test_patterns.size();
                 break;
             case FALSE:
                 fault->detect = FALSE;
@@ -80,9 +84,53 @@ void ATPG::test() {
         // cout << --num_undetected << " faults remaining\n";
     }
 
+    /* STC */
+    if (compress_test)
+    {
+        // write to lp format
+        FILE *fp;
+        fp = fopen("lp", "w");
+        fprintf(fp, "min:");
+        for (int i = 0; i < patterns.size(); i++)
+            fprintf(fp, " +x%d", i+1);
+        fprintf(fp, ";\n");
+        int fnum = 0;
+        for (fptr fault : fault_list) 
+        {
+            if (fault->detect == FALSE) continue;
+            fprintf(fp, "r_%d: ", fnum++);
+            for (int num : fault->detected_ind)
+                fprintf(fp, "+x%d ", num);
+            fprintf(fp, ">= %d;\n", detected_num);
+        }
+        fprintf(fp, "bin x1");
+        for (int i = 1; i < patterns.size(); i++)
+            fprintf(fp, ", x%d", i+1);
+        fprintf(fp, ";\n");
+        fclose(fp);
+
+        // solve 0-1ILP
+        system("./../lp_solve lp > tmp");
+        system("rm lp");
+
+        // parse result
+        fp = fopen("tmp", "r");
+        char line[50];
+        int pnum = 0;
+        while (fgets(line, 50, fp) != NULL)
+        {
+            if (line[0] != 'x') continue;
+            if (line[strlen(line)-2] == '1')
+                printf("T'%s'\n", patterns[pnum++].c_str());
+        }
+        fclose(fp);
+        system("rm tmp");
+        pattern_num = pnum;
+    }
+
     display_undetect();
     fprintf(stdout, "\n");
-    fprintf(stdout, "#number of generated test patterns = %d\n", gen_patterns);
+    fprintf(stdout, "#number of generated test patterns = %d\n", pattern_num);
     fprintf(stdout, "#number of aborted faults = %d\n", no_of_aborted_faults);
     fprintf(stdout, "#number of redundant faults = %d\n", no_of_redundant_faults);
     fprintf(stdout, "#number of calling podem1 = %d\n", no_of_calls);

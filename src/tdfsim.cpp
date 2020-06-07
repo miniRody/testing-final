@@ -275,6 +275,7 @@ void ATPG::tdfault_sim_a_vector2(const string &vec, int &num_of_current_detect) 
 
   for (fptr fault : flist_undetect) {
       if (fault->detect == TRUE) {
+          fault->detected_ind.push_back(patterns.size());
           if (++fault->detected_time < detected_num)
               fault->detect = FALSE;
       }
