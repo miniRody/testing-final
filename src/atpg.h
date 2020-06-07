@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <set>
 #include <list>
 #include <forward_list>
 #include <array>
@@ -135,6 +136,8 @@ class ATPG {
   bool fsim_only;                      /* flag to indicate fault simulation only */
   bool tdfsim_only;                    /* flag to indicate tdfault simulation only */
   bool compress_test;
+  set<string> patterns_set;            /* generated patterns */
+  vector<string> patterns;
 
   /* used in input.cpp to parse circuit*/
   int debug;                           /* != 0 if debugging;  this is a switch of debug mode */
@@ -329,11 +332,12 @@ class ATPG {
 			                            associated gate input index number for this GI fault */
     short fault_type;          /* s-a-1 or s-a-0 or slow-to-rise or slow-to-fall fault */
     short detect;              /* detection flag */
-    short activate{};            /* activation flag */
+    short activate{};          /* activation flag */
     bool test_tried;           /* flag to indicate test is being tried */
     int eqv_fault_num;         /* accumulated number of equivalent faults from PI to PO, see initflist.cpp */
     int to_swlist;             /* index to the sort_wlist[] */
     int fault_no;              /* fault index */
-    int detected_time{};         /* for N-detect */
+    int detected_time{};       /* for N-detect */
+    vector<int> detected_ind;  /* detected pattern index */
   }; // class FAULT
 };// class ATPG
