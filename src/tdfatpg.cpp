@@ -159,8 +159,7 @@ void ATPG::get_wire_support(wptr ckt_wire, vector<wptr> &supp_wires) {
 void ATPG::rand_fill_unknown(string& pattern) {
     int pos, num_U_value = 0;
     unordered_set<string> cand_pattern;
-    random_device rd;
-    mt19937 mt(rd());
+    mt19937 mt(87);
     uniform_int_distribution<int> dist(INT_MIN, INT_MAX);
     
     for (char bit : pattern)
@@ -169,8 +168,8 @@ void ATPG::rand_fill_unknown(string& pattern) {
     if (num_U_value == 0)
         return;
     // Derive the patterns we would like to simulate
-    if (num_U_value > 6) {
-        while (cand_pattern.size() < 100) {
+    if (num_U_value > 7) {
+        while (cand_pattern.size() < 200) {
             string unfilled = pattern;
             for (auto str_iter = unfilled.begin(); str_iter != unfilled.end(); ) {
                 int random_num = dist(mt);
