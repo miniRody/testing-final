@@ -54,15 +54,13 @@ void ATPG::test() {
         total_attempt_num = detected_num - fault->detected_time;
         switch (podem(fault, test_patterns)) {
             case TRUE:
-                if (test_patterns.size() == total_attempt_num) {
-                    for (string &vec : test_patterns) {
-                        // TODO: Dynamic compression
-                        rand_fill_unknown(vec);  // random fill unknown values
-                        tdfault_sim_a_vector(vec, detected_fnum);
-                        printf("T'%s'\n", vec.c_str());
-                    }
-                    gen_patterns += test_patterns.size();
+                for (string &vec : test_patterns) {
+                    // TODO: Dynamic compression
+                    rand_fill_unknown(vec);  // random fill unknown values
+                    tdfault_sim_a_vector(vec, detected_fnum);
+                    printf("T'%s'\n", vec.c_str());
                 }
+                gen_patterns += test_patterns.size();
                 break;
             case FALSE:
                 fault->detect = FALSE;
