@@ -89,8 +89,8 @@ class ATPG {
   /*defined in tdfsim.cpp*/
   void generate_tdfault_list();
   void transition_delay_fault_simulation(int &);
-  void tdfault_sim_a_vector(const string &, int &);
-  void tdfault_sim_a_vector2(const string &, int &);
+  void tdfault_sim_a_vector(const string &, int &, int mode = 0);
+  void tdfault_sim_a_vector2(const string &, int &, int);
   int num_of_tdf_fault{};
   int detected_num{};
   bool get_tdfsim_only() { return tdfsim_only; }
@@ -197,7 +197,7 @@ class ATPG {
   bool find_test{};        // true when a test pattern is found
   bool no_test{};          // true when it is proven that no test exists for this fault
 
-  int podem(fptr, string, vector<string>&);
+  int podem(fptr, vector<string>&);
   wptr fault_evaluate(fptr);
   void forward_imply(wptr);
   wptr test_possible(fptr);
@@ -220,10 +220,10 @@ class ATPG {
 
   /* declared in tdfatpg.cpp */
   bool achieve_objective(const wptr, const int);
-  string find_V1_pattern(const fptr, const char);
+  string find_V1_pattern(const fptr);
   void ckt_snapshot(int);
   void get_wire_support(wptr, vector<wptr>&);
-  void dynamic_compression(string&);
+  void rand_fill_unknown(string&);
 
   /* declaration of WIRE, NODE, and FAULT classes */
   /* in our model, a wire has inputs (inode) and outputs (onode) */

@@ -30,7 +30,7 @@ void ATPG::transition_delay_fault_simulation(int &total_detect_num) {
   }
 }// fault_simulate_vectors
 
-void ATPG::tdfault_sim_a_vector(const string &vec, int &num_of_current_detect) {
+void ATPG::tdfault_sim_a_vector(const string &vec, int &num_of_current_detect, int mode) {
   int i, nckt;
   fptr f;
 
@@ -56,12 +56,12 @@ void ATPG::tdfault_sim_a_vector(const string &vec, int &num_of_current_detect) {
       f->activate = FALSE;
   }
 
-  tdfault_sim_a_vector2(vec, num_of_current_detect);
+  tdfault_sim_a_vector2(vec, num_of_current_detect, mode);
 
 }
 
 /* fault simulate a single test vector */
-void ATPG::tdfault_sim_a_vector2(const string &vec, int &num_of_current_detect) {
+void ATPG::tdfault_sim_a_vector2(const string &vec, int &num_of_current_detect, int mode) {
   wptr w, faulty_wire;
   /* array of 16 fptrs, which points to the 16 faults in a simulation packet  */
   fptr simulated_fault_list[num_of_pattern];
@@ -275,8 +275,14 @@ void ATPG::tdfault_sim_a_vector2(const string &vec, int &num_of_current_detect) 
 
   for (fptr fault : flist_undetect) {
       if (fault->detect == TRUE) {
-          if (++fault->detected_time < detected_num)
+          if (mode == 0) {
+              if (++fault->detected_time < detected_num)
+                  fault->detect = FALSE;
+          }
+          else if (mode == 1) {
               fault->detect = FALSE;
+              num_of_current_detect++;
+          }
       }
   }
 

@@ -1,15 +1,15 @@
 #include "atpg.h"
 #include <assert.h>
 #include <limits.h>
+#include <random>
 #include <queue>
 #include <stack>
-#include <list>
-#include <map>
+#include <array>
+#include <set>
 #include <unordered_set>
 
 #define CONFLICT 2
 #define BACKTRACK_LIMIT 100
-#define COMPRESS_NUM 20
 
 /* Assign values to PI such that object_wire has value of object_level */
 bool ATPG::achieve_objective(const wptr object_wire, const int object_level) {
@@ -60,7 +60,7 @@ bool ATPG::achieve_objective(const wptr object_wire, const int object_level) {
 
  /* Assign value to PI such that the transition fault is activated.
   * Return the test pattern in string format. */
-string ATPG::find_V1_pattern(fptr td_fault, char last_bit) {
+string ATPG::find_V1_pattern(fptr td_fault) {
     wptr faulty_wire = sort_wlist[td_fault->to_swlist];
     int shifted_in_bit;
     string ret_val;
@@ -81,7 +81,7 @@ string ATPG::find_V1_pattern(fptr td_fault, char last_bit) {
         if (i != cktin.size() - 1)
             cktin[i]->value = cktin[i+1]->value;
         else
-            cktin[i]->value = ctoi(last_bit);
+            cktin[i]->value = U;
         cktin[i]->set_changed();
     }
     for (int i = 0; i < sort_wlist.size(); ++i) {
@@ -131,7 +131,7 @@ void ATPG::ckt_snapshot(int mode) {
     }
 }
 
-/* Collect PIs which have a path with all unknown values to given wire */
+/* Collect PIs which have a path with all unknown values to the given wire */
 void ATPG::get_wire_support(wptr ckt_wire, vector<wptr> &supp_wires) {
     unordered_set<wptr> visited_wire;
     queue<wptr> visit_queue;
@@ -147,7 +147,7 @@ void ATPG::get_wire_support(wptr ckt_wire, vector<wptr> &supp_wires) {
         else {
             for (wptr w : ckt_wire->inode.front()->iwire) {
                 if (w->value == U && visited_wire.find(w) == visited_wire.end()) {
-                    visit_queue.push(w);    
+                    visit_queue.push(w);
                     visited_wire.insert(w);
                 }
             }
@@ -156,31 +156,63 @@ void ATPG::get_wire_support(wptr ckt_wire, vector<wptr> &supp_wires) {
     }
 }
 
-/* Dynamically compress the given test pattern. */
-void ATPG::dynamic_compression(string &raw_pattern) {
-    map< int, list<fptr> > buckets;
-    list<fptr> try_flist;
-    vector<string> compressed_pattern;
-    int no_of_compress = 0;
-
-    // Try the difficult faults first
-    for (fptr f : flist_undetect) {
-        if (f->detect == FALSE) {
-            if (buckets.find(f->detected_time) == buckets.end())
-                buckets[f->detected_time] = { f };
-            else
-                buckets[f->detected_time].push_back(f);
+void ATPG::rand_fill_unknown(string& pattern) {
+    int pos, num_U_value = 0;
+    unordered_set<string> cand_pattern;
+    random_device rd;
+    mt19937 mt(rd());
+    uniform_int_distribution<int> dist(INT_MIN, INT_MAX);
+    
+    for (char bit : pattern)
+        if (bit == '2')
+            num_U_value++;
+    if (num_U_value == 0)
+        return;
+    // Derive the patterns we would like to simulate
+    if (num_U_value > 6) {
+        while (cand_pattern.size() < 100) {
+            string unfilled = pattern;
+            for (auto str_iter = unfilled.begin(); str_iter != unfilled.end(); ) {
+                int random_num = dist(mt);
+                for (int i = 31; i >= 0; i--) {
+                    // Let the iterator shift to next unknown value
+                    while (str_iter != unfilled.end() && *str_iter != '2')
+                        str_iter++;
+                    if (str_iter != unfilled.end())
+                        *str_iter = ((random_num >> i) & 1)? '1':'0';
+                    else
+                        break;
+                }
+            }
+            cand_pattern.insert(unfilled);
         }
     }
-    for (auto bucket : buckets)
-        try_flist.splice(try_flist.end(), bucket.second);
+    else {
+        list<string> before_fill(1, pattern);
+        for (int i = 0; i < num_U_value; i++) {
+            list<string> after_fill;
+            for (string patt : before_fill) {
+                for (pos = 0; pos < patt.length(); pos++)
+                    if (patt[pos] == '2')
+                        break;
+                patt[pos] = '0';
+                after_fill.push_back(patt);
+                patt[pos] = '1';
+                after_fill.push_back(patt);
+            }
+            before_fill.clear();
+            before_fill.splice(before_fill.begin(), after_fill);
+        }
+        for (string const &filled : before_fill)
+            cand_pattern.insert(filled);
+    }
 
-    total_attempt_num = 1;
-    for (fptr fault : try_flist) {
-        if (podem(fault, raw_pattern, compressed_pattern) == TRUE) {
-            raw_pattern = compressed_pattern.front();
-            if(++no_of_compress == COMPRESS_NUM) 
-                break;
+    int detect_num, max_detect_num = 0;
+    for (string vec : cand_pattern) {
+        tdfault_sim_a_vector(vec, detect_num, 1);
+        if (detect_num > max_detect_num) {
+            max_detect_num = detect_num;
+            pattern = vec;
         }
     }
 }

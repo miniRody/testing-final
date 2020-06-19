@@ -9,17 +9,21 @@
 
 #define CONFLICT 2
 
-/* generates a single pattern for a single fault while satisfying the given
- * constraint. */
-int ATPG::podem(const fptr fault, const string constraint, vector<string> &test_patterns) {
+/* generates a single pattern for a single fault */
+int ATPG::podem(const fptr fault, vector<string> &test_patterns) {
   int i, ncktwire, ncktin;
   wptr wpi; // points to the PI currently being assigned
   forward_list<wptr> decision_tree; // design_tree (a LIFO stack)
   wptr wfault;
   int attempt_num = 0;  // counts the number of pattern generated so far for the given fault
   string test_pair;
-  char last_bit;
 
+  /* initialize all circuit wires to unknown */
+  ncktwire = sort_wlist.size();
+  ncktin = cktin.size();
+  for (i = 0; i < ncktwire; i++) {
+    sort_wlist[i]->value = U;
+  }
   no_of_backtracks = 0;
   find_test = false;
   no_test = false;
@@ -27,40 +31,27 @@ int ATPG::podem(const fptr fault, const string constraint, vector<string> &test_
 
   mark_propagate_tree(fault->node);
 
-  /* inject the constraint to PIs */
-  ncktwire = sort_wlist.size();
-  ncktin = cktin.size();
-  last_bit = constraint[ncktin-1];
-  for (i = 0; i < ncktin; i++) {
-    if (i == 0)
-      cktin[i]->value = ctoi(constraint[ncktin]);
-    else
-      cktin[i]->value = ctoi(constraint[i-1]);
-    cktin[i]->set_changed();
-  }
-  for (i = 0; i < ncktwire; i++) {
-    if (i >= ncktin)
-      sort_wlist[i]->value = U;
-  }
-  if (set_uniquely_implied_value(fault) == CONFLICT)
-    no_test = true;
-  else {
-    sim();
-    if (sort_wlist[fault->to_swlist]->value == fault->fault_type)
-      no_test = true;
-    else { // faulty wire is either unknown or equals V2's value
-      if ((wfault = fault_evaluate(fault)) != nullptr)
-        forward_imply(wfault);
-      if ((test_pair = find_V1_pattern(fault, last_bit)) != "") {
-        if (check_test()) { // if fault effect reaches PO, done. Fig 7.10
-          test_patterns.push_back(test_pair);
-          find_test = true;
-          attempt_num++; // increase pattern count for this fault
-        }
+  /* Fig 7 starts here */
+  /* set the initial objective, assign the first PI.  Fig 7.P1 */
+  switch (set_uniquely_implied_value(fault)) {
+    case TRUE: // if a  PI is assigned
+      sim();  // Fig 7.3
+      wfault = fault_evaluate(fault);
+      if (wfault != nullptr) forward_imply(wfault);// propagate fault effect
+      if ((test_pair = find_V1_pattern(fault)) != "") {
+          if (check_test()) { // if fault effect reaches PO, done. Fig 7.10
+              test_patterns.push_back(test_pair);
+              find_test = true; 
+              attempt_num++; // increase pattern count for this fault
+          }
+          break;
       }
-      else
-        no_test = true;
-    }
+      // If no hope to activate the fault, fall through
+    case CONFLICT:
+      no_test = true; // cannot achieve initial objective, no test
+      break;
+    case FALSE:
+      break;  //if no PI is reached, keep on backtracing. Fig 7.A
   }
 
   /* loop in Fig 7.ABC
@@ -105,7 +96,7 @@ int ATPG::podem(const fptr fault, const string constraint, vector<string> &test_
     if (wpi) {
       sim();
       if (wfault = fault_evaluate(fault)) forward_imply(wfault);
-      if (check_test() && (test_pair = find_V1_pattern(fault, last_bit)) != "") {
+      if (check_test() && (test_pair = find_V1_pattern(fault)) != "") {
         test_patterns.push_back(test_pair);
         find_test = true;
         attempt_num++; // increase pattern count for this fault
@@ -144,6 +135,7 @@ int ATPG::podem(const fptr fault, const string constraint, vector<string> &test_
   }
   decision_tree.clear();
 
+  // current_backtracks = no_of_backtracks;
   unmark_propagate_tree(fault->node);
 
   if (find_test) {
