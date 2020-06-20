@@ -49,7 +49,7 @@ void ATPG::test() {
     bool verbose = false;
 
     for (fptr fault : fault_list) {
-        if (fault->detect == TRUE)
+		if (fault->detect == TRUE)
             continue;
         total_attempt_num = detected_num - fault->detected_time;
         switch (podem(fault, test_patterns)) {
@@ -113,7 +113,8 @@ void ATPG::test() {
         {
             if (line[0] != 'x') continue;
             if (line[strlen(line)-2] == '1')
-                printf("T'%s'\n", patterns[pnum++].c_str());
+                printf("T'%s'\n", patterns[pnum].c_str());
+			pnum++;
         }
         fclose(fp);
         system("rm tmp");
