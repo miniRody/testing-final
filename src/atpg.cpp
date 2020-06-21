@@ -49,18 +49,19 @@ void ATPG::test() {
     bool verbose = false;
 
     for (fptr fault : fault_list) {
-        if (fault->detect == TRUE)
+		if (fault->detect == TRUE)
             continue;
         total_attempt_num = detected_num - fault->detected_time;
         switch (podem(fault, test_patterns)) {
             case TRUE:
                 for (string &vec : test_patterns) {
-                    // TODO: Dynamic compression
-                    rand_fill_unknown(vec);  // random fill unknown values
+					rand_fill_unknown(vec);
                     tdfault_sim_a_vector(vec, detected_fnum);
-                    printf("T'%s'\n", vec.c_str());
+                    if (!compress_test)
+                        printf("T'%s'\n", vec.c_str());
+                    patterns.push_back(vec);
+                    gen_patterns++;
                 }
-                gen_patterns += test_patterns.size();
                 break;
             case FALSE:
                 fault->detect = FALSE;
@@ -73,6 +74,51 @@ void ATPG::test() {
                 break;
         }
         // cout << --num_undetected << " faults remaining\n";
+    }
+
+	/* STC */
+    if (compress_test)
+    {
+        // write to lp format
+        FILE *fp;
+        fp = fopen("lp", "w");
+        fprintf(fp, "min:");
+        for (int i = 0; i < patterns.size(); i++)
+            fprintf(fp, " +x%d", i+1);
+        fprintf(fp, ";\n");
+        int fnum = 0;
+        for (fptr fault : fault_list) 
+        {
+            if (fault->detect == FALSE) continue;
+            fprintf(fp, "r_%d: ", fault->fault_no);
+            for (int num : fault->detected_ind)
+                fprintf(fp, "+x%d ", num+1);
+            fprintf(fp, ">= %d;\n", detected_num);
+        }
+        fprintf(fp, "bin x1");
+        for (int i = 1; i < patterns.size(); i++)
+            fprintf(fp, ", x%d", i+1);
+        fprintf(fp, ";\n");
+        fclose(fp);
+
+        // solve 0-1ILP
+        system("lp_solve lp > tmp");
+        system("rm lp");
+
+        // parse result
+        fp = fopen("tmp", "r");
+        char line[50];
+        int pnum = 0;
+        while (fgets(line, 50, fp) != NULL)
+        {
+            if (line[0] != 'x') continue;
+            if (line[strlen(line)-2] == '1')
+                printf("T'%s'\n", patterns[pnum].c_str());
+			pnum++;
+        }
+        fclose(fp);
+        system("rm tmp");
+        gen_patterns = pnum;
     }
 
     display_undetect();

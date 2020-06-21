@@ -135,6 +135,7 @@ class ATPG {
   bool fsim_only;                      /* flag to indicate fault simulation only */
   bool tdfsim_only;                    /* flag to indicate tdfault simulation only */
   bool compress_test;
+  vector<string> patterns;
 
   /* used in input.cpp to parse circuit*/
   int debug;                           /* != 0 if debugging;  this is a switch of debug mode */
@@ -336,5 +337,6 @@ class ATPG {
     int to_swlist;             /* index to the sort_wlist[] */
     int fault_no;              /* fault index */
     int detected_time{};         /* for N-detect */
+    vector<int> detected_ind;  /* detected pattern index */
   }; // class FAULT
 };// class ATPG
