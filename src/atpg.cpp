@@ -56,8 +56,8 @@ void ATPG::test() {
         switch (podem(fault, test_patterns)) {
             case TRUE:
                 for (string &vec : test_patterns) {
-                    if (compress_test)
-                        podemX(fault_list, i, vec);
+                    //if (compress_test)
+                    //    podemX(fault_list, i, vec);
 					rand_fill_unknown(vec);
                     tdfault_sim_a_vector(vec, detected_fnum);
                     if (!compress_test)
@@ -117,11 +117,12 @@ void ATPG::test() {
             if (line[0] != 'x') continue;
             if (line[strlen(line)-2] == '1')
                 printf("T'%s'\n", patterns[pnum].c_str());
+			else
+				gen_patterns--;	
 			pnum++;
         }
         fclose(fp);
         system("rm tmp");
-        gen_patterns = pnum;
     }
 
     display_undetect();
