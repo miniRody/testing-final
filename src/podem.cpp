@@ -8,6 +8,209 @@
 #include "atpg.h"
 
 #define CONFLICT 2
+#define FAULT_TRY_NUM 50
+
+/* generates a single pattern for a single fault */
+//int ATPG::podemX(const fptr fault, vector<string> &test_patterns) {
+
+void ATPG::simV1V2(vector<int> &wireValue1, const string &vec) {
+  //assign PI based on vec, if 111220, V2 = 01112, V1 = 11122
+  //assign V1 and store it
+  int i;
+  for (i = 0; i < cktin.size(); i++) {
+    cktin[i]->value = ctoi(vec[i]);
+    cktin[i]->set_changed();
+  }
+  for (i = cktin.size(); i < sort_wlist.size(); i++) { // don't touch PI value
+    sort_wlist[i]->value = U;
+  }
+  sim(); // simulate entire circuit
+  for (i = 0; i < sort_wlist.size(); i++) {
+//    cout << sort_wlist[i]->name << " " << sort_wlist[i]->value << endl;
+    wireValue1[i] = sort_wlist[i]->value;
+//    sort_wlist[i]->value = U; // reset
+  }
+
+  //assign V2
+  for (i = 0; i < cktin.size(); i++) {
+    if (i == 0)
+      cktin[i]->value = ctoi(vec[cktin.size()]);
+    else
+      cktin[i]->value = ctoi(vec[i - 1]);
+    cktin[i]->set_changed();
+  }
+  for (i = cktin.size(); i < sort_wlist.size(); i++) { // don't touch PI value
+    sort_wlist[i]->value = U;
+  }
+  sim(); // simulate entire circuit
+  for (i = 0; i < sort_wlist.size(); i++) {
+//    cout << sort_wlist[i]->name << " " << sort_wlist[i]->value << endl;
+  }
+
+}
+
+int ATPG::podemX(vector<fptr> &fault_list, int idx_faultlist, string &vec) {
+//  vec = "111000"; // confirmed: can directly change value of pattern here if pass string vec by reference
+
+  //assign PI based on vec, if 111220, V2 = 01112, V1 = 11122
+  //store size of it, 
+  // simulate entire circuit
+  //get PO with value U (X)
+  //for each PO, try to activate then propate the fault to the PO
+
+  //terminate: if no more PO = X, or pattern found (find_test)
+
+// trace code:
+  //test_possible 只有unknown的PI才會return ptr, 如果不是會return nullptr
+
+  int i, j, ncktwire, ncktin;
+  int try_num = 0;
+  wptr wpi; // points to the PI currently being assigned
+  forward_list<wptr> decision_tree; // design_tree (a LIFO stack)
+  wptr wfault;
+  string test_pair;
+  fptr fault; // diff with podem
+
+  /* initialize all circuit wires to unknown */
+  ncktwire = sort_wlist.size();
+  ncktin = cktin.size();
+  for (i = 0; i < ncktwire; i++) {
+    sort_wlist[i]->value = U;
+  }
+  no_of_backtracks = 0;
+  find_test = false;
+  no_test = false;
+  vector<int> wireValue1(ncktwire, 0);
+  simV1V2(wireValue1, vec);
+
+  //get PO with value U (X) in V2
+      // 3. backtrace from a output = U (the PO)
+      //terminate: if no more PO = X, or pattern found? (find_test)
+//  for (i = 0; i < cktout.size(); i++) {
+/*TODO可以去掉
+Hash table from wire -> fault
+是要update，目前有哪些unknown PO，
+反正勢必要動PI，勢必要重新simulate電路，就unknown PO，所以還有哪些fault應該要被嘗試*/
+
+/*一個function叫一次，就是pack一個pattern進去，call完function再去
+確認哪個PI有變動，直接sim那個PI就好 (set_change)*/
+
+
+//    if (cktout[i]->value != U)
+//      continue;
+//    cout << cktout[i]->name << " " << cktout[i]->value << endl;
+    // which node & which fault?
+    // 先greedy，跑 j = i+1開始的到last fault，把未來要做的事情現在做掉，省一個pattern
+    // possible TODO: keep the exact time each fault covered, and pick the least detected fault? pick the almost detected fault?
+
+
+    for (j = idx_faultlist+1; j < fault_list.size(); j++) {
+      fault = fault_list[j];
+
+      if (++try_num > FAULT_TRY_NUM)
+          break;
+
+      if (fault->detect == TRUE)
+        continue;
+      // 1. if the node has at least 1 U in V1 or V2, and its V1 V2 (1/0) meet rising/falling
+      if ( sort_wlist[fault->to_swlist]->value != U && wireValue1[fault->to_swlist] != U)
+        continue;
+      // 2. the node must be in the fanin cone of the PO cktout[i]
+
+      //for the fault, try to activate then propagate the fault to the PO
+      //podem
+
+
+      mark_propagate_tree(fault->node);
+      /* Fig 7 starts here */
+      /* set the initial objective, assign the first PI.  Fig 7.P1 */
+      switch (set_uniquely_implied_value(fault)) {
+        case TRUE: // if a  PI is assigned
+          sim();  // Fig 7.3
+          wfault = fault_evaluate(fault);
+          if (wfault != nullptr) forward_imply(wfault);// propagate fault effect
+          if ((test_pair = find_V1_pattern(fault)) != "") {
+              if (check_test()) { // if fault effect reaches PO, done. Fig 7.10
+                  vec = test_pair;
+                  find_test = true;
+              }
+              break;
+          }
+          // If no hope to activate the fault, fall through
+        case CONFLICT:
+          no_test = true; // cannot achieve initial objective, no test
+          break;
+        case FALSE:
+          break;  //if no PI is reached, keep on backtracing. Fig 7.A
+      }
+
+      /* loop in Fig 7.ABC
+       * quit the loop when either one of the three conditions is met:
+       * 1. number of backtracks is equal to or larger than limit
+       * 2. no_test
+       * 3. already find a test pattern AND no_of_patterns meets required total_attempt_num */
+      while (no_of_backtracks < backtrack_limit && !no_test && !find_test) {
+        /* check if test possible.   Fig. 7.1 */
+        if (wpi = test_possible(fault)) {
+          wpi->set_changed();
+          /* insert a new PI into decision_tree */
+          decision_tree.push_front(wpi);
+        } else { // no test possible using this assignment, backtrack.
+
+          while (!decision_tree.empty() && (wpi == nullptr)) {
+            /* if both 01 already tried, backtrack. Fig.7.7 */
+            if (decision_tree.front()->is_all_assigned()) {
+              decision_tree.front()->remove_all_assigned();  // clear the ALL_ASSIGNED flag
+              decision_tree.front()->value = U; // do not assign 0 or 1
+              decision_tree.front()->set_changed(); // this PI has been changed
+              /* remove this PI in decision tree.  see dashed nodes in Fig 6 */
+              decision_tree.pop_front();
+            }
+              /* else, flip last decision, flag ALL_ASSIGNED. Fig. 7.8 */
+            else {
+              decision_tree.front()->value = decision_tree.front()->value ^ 1; // flip last decision
+              decision_tree.front()->set_changed(); // this PI has been changed
+              decision_tree.front()->set_all_assigned();
+              no_of_backtracks++;
+              wpi = decision_tree.front();
+            }
+          } // while decision tree && ! wpi
+          if (wpi == nullptr) no_test = true; //decision tree empty,  Fig 7.9
+        } // no test possible
+
+        if (wpi) {
+          sim();
+          if (wfault = fault_evaluate(fault)) forward_imply(wfault);
+          if (check_test() && (test_pair = find_V1_pattern(fault)) != "") {
+            vec = test_pair;
+            find_test = true;
+          }  // if check_test()
+        }
+      } // while (three conditions)
+
+      /* clear everything */
+      for (wptr wptr_ele: decision_tree) {
+        wptr_ele->remove_all_assigned();
+      }
+      decision_tree.clear();
+
+      // current_backtracks = no_of_backtracks;
+      unmark_propagate_tree(fault->node);
+
+      if (find_test)
+        simV1V2(wireValue1, vec); // Update circuit status
+
+
+    }// for each undetected fault
+  return 0;
+
+// trace code:
+  //test_possible 只有unknown的PI才會return ptr, 如果不是會return nullptr
+
+
+
+}/* end of podem */
+
 
 /* generates a single pattern for a single fault */
 int ATPG::podem(const fptr fault, vector<string> &test_patterns) {

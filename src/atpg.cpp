@@ -48,13 +48,16 @@ void ATPG::test() {
     int detected_fnum, gen_patterns = 0;
     bool verbose = false;
 
-    for (fptr fault : fault_list) {
+    for (int i = 0; i < fault_list.size(); i++) {
+        fptr fault = fault_list[i];
 		if (fault->detect == TRUE)
             continue;
         total_attempt_num = detected_num - fault->detected_time;
         switch (podem(fault, test_patterns)) {
             case TRUE:
                 for (string &vec : test_patterns) {
+                    if (compress_test)
+                        podemX(fault_list, i, vec);
 					rand_fill_unknown(vec);
                     tdfault_sim_a_vector(vec, detected_fnum);
                     if (!compress_test)

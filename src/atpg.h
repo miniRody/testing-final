@@ -199,6 +199,9 @@ class ATPG {
   bool no_test{};          // true when it is proven that no test exists for this fault
 
   int podem(fptr, vector<string>&);
+  int podemX(vector<fptr> &, int, string&);
+  void simV1V2(vector<int> &, const string &);
+
   wptr fault_evaluate(fptr);
   void forward_imply(wptr);
   wptr test_possible(fptr);

@@ -279,8 +279,8 @@ void ATPG::tdfault_sim_a_vector2(const string &vec, int &num_of_current_detect, 
               fault->detected_ind.push_back(patterns.size());
               if (++fault->detected_time < detected_num)
                   fault->detect = FALSE;
-              else
-                  printf("Fault %d detected\n", fault->fault_no);
+              // else
+              //     printf("Fault %d detected\n", fault->fault_no);
           }
           else if (mode == 1) {
               fault->detect = FALSE;
